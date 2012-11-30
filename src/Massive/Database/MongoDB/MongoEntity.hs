@@ -25,8 +25,6 @@ import qualified Data.Aeson                          as Aeson
 import qualified Data.Bson                           as Bson
 import           Data.Maybe                          (fromMaybe)
 import qualified Data.Text                           as T
---import           Safe
---import           Web.PathPieces
 
 import           Massive.Database.MongoDB.MongoValue
 
@@ -54,11 +52,7 @@ instance (MongoEntity α) ⇒ Aeson.ToJSON (Key α) where
 
 instance (MongoEntity α) ⇒ Aeson.FromJSON (Key α) where
   parseJSON v = toKey <$> Aeson.parseJSON v
-{-
-instance (MongoEntity α) ⇒ PathPiece (Key α) where
-  fromPathPiece = fmap toKey ∘ readMay ∘ T.unpack
-  toPathPiece   = T.pack ∘ show ∘ fromKey
--}
+
 -------------------------------------------------------------------------------
 
 (.:) ∷ (Applicative μ, Monad μ, MongoValue α) ⇒ Bson.Document → T.Text → ErrorT String μ α
