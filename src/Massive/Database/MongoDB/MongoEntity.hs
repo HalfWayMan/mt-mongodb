@@ -24,7 +24,10 @@ import           Control.Monad.Error
 import qualified Data.Aeson                          as Aeson
 import qualified Data.Bson                           as Bson
 import           Data.Maybe                          (fromMaybe)
+import           Data.Monoid
 import qualified Data.Text                           as T
+import           Massive.Control.Combinators
+import           Massive.Data.Serial
 
 import           Massive.Database.MongoDB.MongoValue
 
@@ -52,6 +55,14 @@ instance (MongoEntity α) ⇒ Aeson.ToJSON (Key α) where
 
 instance (MongoEntity α) ⇒ Aeson.FromJSON (Key α) where
   parseJSON v = toKey <$> Aeson.parseJSON v
+
+instance (MongoEntity α) ⇒ Serial (Key α) where
+  put =
+    let f (Oid x y) = put x <> put y
+    in f ∘ fromKey
+  
+  get =
+    (toKey ./ Oid) <$> get <*> get
 
 -------------------------------------------------------------------------------
 
