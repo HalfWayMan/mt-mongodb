@@ -25,23 +25,26 @@ module Massive.Database.MongoDB.MongoValue ( MongoValue (..)
 
 import           Prelude.Unicode
 import           Control.Applicative
-import           Control.Arrow        ((&&&))
+import           Control.Arrow              ((&&&))
 import           Control.Monad.Error
-import qualified Data.Aeson           as Aeson
-import           Data.Bson            (ObjectId (..))
-import qualified Data.Bson            as Bson
-import qualified Data.ByteString      as BS
-import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Aeson                 as Aeson
+import           Data.Bson                  (ObjectId (..))
+import qualified Data.Bson                  as Bson
+import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Lazy       as LBS
+import qualified Data.ByteString.Base64.URL as Base64U
 import           Data.Int
-import           Data.List            (find)
-import qualified Data.Map             as M
+import           Data.List                  (find)
+import qualified Data.Map                   as M
 import           Data.Ratio
-import qualified Data.Text            as T
-import qualified Data.Text.Lazy       as LT
+import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
+import qualified Data.Text.Lazy             as LT
 import           Data.Time
 import           Data.Word
 import           Massive.Debug
-import           Text.Read            (readMaybe)
+import           Massive.Data.Password
+import           Text.Read                  (readMaybe)
 import           Text.Printf
 
 -------------------------------------------------------------------------------
@@ -213,6 +216,15 @@ instance (MongoValue α) ⇒ MongoValue (M.Map T.Text α) where
 instance (Ord α, MongoValue α, MongoValue β) ⇒ MongoValue (M.Map α β) where
   toValue = toValue ∘ M.toList
   fromValue v = M.fromList <$> fromValue v
+
+instance MongoValue Password where
+  toValue (Password (salt, hash)) =
+    toValue (salt, TE.decodeUtf8 ∘ Base64U.encode $ hash)
+  fromValue v = do
+    (salt, encoded) ← fromValue v
+    case Base64U.decode (TE.encodeUtf8 encoded) of
+      Left msg → $(failFmt "failed to parse password: %s") msg
+      Right ha → pure (Password (salt, ha))
 
 -------------------------------------------------------------------------------
 
