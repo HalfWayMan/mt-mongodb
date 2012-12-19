@@ -16,6 +16,8 @@ module Massive.Database.MongoDB.Operations ( insert
                                            , update
                                            , get
                                            , select
+                                           , selectOne
+                                           , count
                                            ) where
 
 import           Prelude.Unicode
@@ -49,6 +51,23 @@ select ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) 
 select collection options = do
   docs ← MongoDB.rest =<< MongoDB.find (MongoDB.select options collection)
   Collection <$> mapM fetchKeyValue docs
+
+-------------------------------------------------------------------------------
+
+selectOne ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
+            CollectionName → MongoDB.Document → MongoDB.Action μ (Maybe (Entity α))
+selectOne collection options = do
+  (Collection docs) ← select collection options
+  case docs of
+    (doc : _) → pure (Just doc)
+    _         → pure Nothing
+
+------------------------------------------------------------------------------- 
+
+count ∷ (Functor μ, Applicative μ, MonadIO μ) ⇒
+        CollectionName → MongoDB.Document → MongoDB.Action μ Int
+count collection options =
+  MongoDB.count (MongoDB.select options collection)
 
 -------------------------------------------------------------------------------
 
