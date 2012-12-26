@@ -20,6 +20,7 @@ module Massive.Database.MongoDB.MongoEntity ( MongoEntity (..)
 
 import           Prelude.Unicode
 import           Control.Applicative
+import           Control.Arrow
 import           Control.Monad.Error
 import qualified Data.Aeson                          as Aeson
 import qualified Data.Bson                           as Bson
@@ -35,7 +36,7 @@ import           Massive.Database.MongoDB.MongoValue
 
 type CollectionName = T.Text
 
-class (Show (Key α), MongoValue (Key α)) ⇒ MongoEntity α where
+class (MongoValue (Key α)) ⇒ MongoEntity α where
   data Key α
   
   toKey          ∷ ObjectId → Key α
@@ -49,6 +50,12 @@ instance (MongoEntity α) ⇒ MongoValue (Key α) where
   toValue                    = Bson.ObjId ∘ fromKey
   fromValue (Bson.ObjId oid) = pure (toKey oid)
   fromValue v                = expected "ObjectId" v
+
+instance (MongoEntity α) ⇒ Show (Key α) where
+  show = show ∘ fromKey
+
+instance (MongoEntity α) ⇒ Read (Key α) where
+  readsPrec n = map (first toKey) ∘ readsPrec n
 
 instance (MongoEntity α) ⇒ Aeson.ToJSON (Key α) where
   toJSON = Aeson.toJSON ∘ fromKey
