@@ -13,7 +13,7 @@
 
 module Massive.Database.MongoDB.Operations ( insert
                                            , findAll
-                                           , update
+                                           , save
                                            , get
                                            , select
                                            , selectOne
@@ -71,11 +71,10 @@ count collection options =
 
 -------------------------------------------------------------------------------
 
-update ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
+save ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
          CollectionName → Key α → α → MongoDB.Action μ ()
-update collection key entity =
-  MongoDB.modify (MongoDB.select ["_id" MongoDB.=: (fromKey key)] collection)
-                 (toDocument entity)
+save collection key entity =
+  MongoDB.save collection (("_id" MongoDB.=: (fromKey key)) : (toDocument entity))
 
 -------------------------------------------------------------------------------
 
