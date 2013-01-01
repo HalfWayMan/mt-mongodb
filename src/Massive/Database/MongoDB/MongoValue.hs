@@ -43,6 +43,8 @@ import qualified Data.Text.Lazy             as LT
 import           Data.Time
 import           Data.Word
 import           Massive.Debug
+import           Massive.Data.Decimal
+import           Massive.Data.Money
 import           Massive.Data.Password
 import           Text.Read                  (readMaybe)
 import           Text.Printf
@@ -170,10 +172,25 @@ instance MongoValue Integer where
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
   fromValue v              = expected "Int64" v
 
+instance (MongoValue α) ⇒ MongoValue (Decimal α) where
+  toValue (Decimal p v) = toValue (p, v)
+  fromValue v = do
+    (p, n) ← fromValue v
+    pure $! Decimal p n
+
+instance MongoValue Currency where
+  toValue = toValue ∘ fromEnum
+  fromValue v = toEnum <$> fromValue v
+
+instance MongoValue Money where
+  toValue (Money c v) = toValue (c, v)
+  fromValue v = do
+    (c, v') ← fromValue v
+    pure $! Money c v'
+
 instance (Integral α, MongoValue α) ⇒ MongoValue (Ratio α) where
   toValue     = toValue ∘ (numerator &&& denominator)
   fromValue v = uncurry (%) <$> fromValue v
-    
 
 instance MongoValue Float where
   toValue = Bson.Float ∘ realToFrac
