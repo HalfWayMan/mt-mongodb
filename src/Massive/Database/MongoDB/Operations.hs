@@ -32,6 +32,8 @@ import           Massive.Database.MongoDB.Types
 
 -------------------------------------------------------------------------------
 
+-- | Insert an entity into the specified collection. This function yields the
+-- key for the new document.
 insert ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
          CollectionName → α → MongoDB.Action μ (Key α)
 insert collection entity = do
@@ -40,12 +42,15 @@ insert collection entity = do
   
 ------------------------------------------------------------------------------- 
 
+-- | Given the name of a collection, yield all the documents.
 findAll ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
           CollectionName → MongoDB.Action μ (Collection α)
 findAll collection = select collection []
 
 -------------------------------------------------------------------------------
 
+-- | Given a collection and MongoDB query, yield a collection of all the
+-- documents that match the query.
 select ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
          CollectionName → MongoDB.Document → MongoDB.Action μ (Collection α)
 select collection options = do
@@ -54,6 +59,7 @@ select collection options = do
 
 -------------------------------------------------------------------------------
 
+-- | Similar to 'select', except will only yield zero or one result.
 selectOne ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
             CollectionName → MongoDB.Document → MongoDB.Action μ (Maybe (Entity α))
 selectOne collection options = do
@@ -64,6 +70,8 @@ selectOne collection options = do
 
 ------------------------------------------------------------------------------- 
 
+-- | Count the number of documents in the collection that match the specified
+-- query.
 count ∷ (Functor μ, Applicative μ, MonadIO μ) ⇒
         CollectionName → MongoDB.Document → MongoDB.Action μ Int
 count collection options =
@@ -71,6 +79,10 @@ count collection options =
 
 -------------------------------------------------------------------------------
 
+-- | Save the specified entity back into the specified collection with the
+-- specified key. If a document already eixsts in the collection with the
+-- specified key then its contents will be overwritten; otherwise a new
+-- document will be created with the specified ID.
 save ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
          CollectionName → Key α → α → MongoDB.Action μ ()
 save collection key entity =
@@ -78,11 +90,15 @@ save collection key entity =
 
 -------------------------------------------------------------------------------
 
+-- | Get a document from a collection with a given ID. If a document with the
+-- given ID cannot be found in the indicated collection, the function yields
+-- 'Nothing'.
 get ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
       CollectionName → Key α → MongoDB.Action μ (Maybe α)
 get collection key = do
   result ← MongoDB.findOne (MongoDB.select ["_id" MongoDB.=: fromKey key] collection)
-  maybe (return Nothing) ((either fail (return ∘ Just) =<<) ∘ runErrorT ∘ fromDocument) result
+  maybe (return Nothing)
+        ((either fail (return ∘ Just) =<<) ∘ runErrorT ∘ fromDocument) result
 
 -------------------------------------------------------------------------------
 
