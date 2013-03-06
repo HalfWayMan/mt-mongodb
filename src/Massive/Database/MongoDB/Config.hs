@@ -1,4 +1,3 @@
--- -*- mode: Haskell; fill-column: 79; default-justification: left;         -*-
 {-# LANGUAGE UnicodeSyntax, OverloadedStrings                               #-}
 -------------------------------------------------------------------------------
 -- |
@@ -44,7 +43,7 @@ instance MongoValue DatabaseConfig where
                             , "userpass" ≕ dbConfigUserPass dbConf
                             , "poolSize" ≕ dbConfigPoolSize dbConf
                             ]
-  
+
   fromValue (Bson.Doc doc) =
     DatabaseConfig <$> doc .:  "host"
                    <*> doc .:  "database"
