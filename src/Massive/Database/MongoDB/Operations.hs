@@ -18,6 +18,8 @@ module Massive.Database.MongoDB.Operations ( insert
                                            , select
                                            , selectOne
                                            , count
+                                           , delete
+                                           , deleteWhere
                                            ) where
 
 import           Prelude.Unicode
@@ -39,8 +41,8 @@ insert ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
 insert collection entity = do
   (Bson.ObjId objId) ← MongoDB.insert collection (toDocument entity)
   return $! toKey objId
-  
-------------------------------------------------------------------------------- 
+
+-------------------------------------------------------------------------------
 
 -- | Given the name of a collection, yield all the documents.
 findAll ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
@@ -68,7 +70,7 @@ selectOne collection options = do
     (doc : _) → pure (Just doc)
     _         → pure Nothing
 
-------------------------------------------------------------------------------- 
+-------------------------------------------------------------------------------
 
 -- | Count the number of documents in the collection that match the specified
 -- query.
@@ -99,6 +101,23 @@ get collection key = do
   result ← MongoDB.findOne (MongoDB.select ["_id" MongoDB.=: fromKey key] collection)
   maybe (return Nothing)
         ((either fail (return ∘ Just) =<<) ∘ runErrorT ∘ fromDocument) result
+
+-------------------------------------------------------------------------------
+
+-- | Delete a document from a collection with a given ID. If a document with
+--   the given ID cannot be found, the function will silently fail.
+delete ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒
+         CollectionName → Key α → MongoDB.Action μ ()
+delete collection key =
+  MongoDB.deleteOne (MongoDB.select ["_id" MongoDB.=: fromKey key] collection)
+
+-------------------------------------------------------------------------------
+
+-- | Given a MongoDB query, delete all documents that match that query.
+deleteWhere ∷ (Applicative μ, MonadIO μ) ⇒
+              CollectionName → MongoDB.Document → MongoDB.Action μ ()
+deleteWhere collection options =
+  MongoDB.delete (MongoDB.select options collection)
 
 -------------------------------------------------------------------------------
 
