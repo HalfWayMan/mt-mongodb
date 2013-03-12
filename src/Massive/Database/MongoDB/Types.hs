@@ -13,6 +13,7 @@
 
 module Massive.Database.MongoDB.Types ( Entity (..)
                                       , Collection (..)
+                                      , toList
                                       ) where
 
 import           Prelude.Unicode
@@ -54,6 +55,10 @@ instance (MongoEntity α, Aeson.ToJSON α) ⇒ Aeson.ToJSON (Entity α) where
 -- | A collection of some type. This is represented as a list of 'Entity'.
 newtype Collection α = Collection { unCollection ∷ [Entity α] }
 
+-- | Given a collection, convert it to a list of tuples.
+toList ∷ (MongoEntity α) ⇒ Collection α → [(Key α, α)]
+toList = map (\(Entity key val) → (key, val)) ∘ unCollection
+
 -- |  Much  like the  'Entity'  type,  there exists  a  'Show'  instance for  a
 -- 'Collection' of some type @α@ that  is both an instance of the 'MongoEntity'
 -- and 'Show' type clases.
@@ -69,7 +74,7 @@ instance (MongoEntity α, Aeson.ToJSON α) ⇒ Aeson.ToJSON (Collection α) wher
 
 -- | Provide a convenient deserialisation of a collection from JSON.
 instance (MongoEntity α, Aeson.FromJSON α) ⇒ Aeson.FromJSON (Collection α) where
-  parseJSON (Aeson.Object obj) = 
+  parseJSON (Aeson.Object obj) =
     Collection <$> mapM fromPair (HM.toList obj)
     where
       fromPair (key, val) =
