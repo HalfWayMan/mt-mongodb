@@ -16,6 +16,7 @@ module Massive.Database.MongoDB.Operations ( insert
                                            , save
                                            , get
                                            , select
+                                           , selectLimit
                                            , selectOne
                                            , count
                                            , delete
@@ -57,6 +58,18 @@ select ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) 
          CollectionName → MongoDB.Document → MongoDB.Action μ (Collection α)
 select collection options = do
   docs ← MongoDB.rest =<< MongoDB.find (MongoDB.select options collection)
+  Collection <$> mapM fetchKeyValue docs
+
+-------------------------------------------------------------------------------
+
+-- | Given a collection, a MongoDB query, an offset and a count, yield a
+--   collection of all the documents that match the query, limited by the
+--   specified amount.
+selectLimit ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
+              CollectionName → MongoDB.Document → Int → Int → MongoDB.Action μ (Collection α)
+selectLimit collection options offset limit = do
+  docs ← MongoDB.rest =<< MongoDB.find ((MongoDB.select options collection) { MongoDB.skip  = fromIntegral offset
+                                                                             , MongoDB.limit = fromIntegral limit })
   Collection <$> mapM fetchKeyValue docs
 
 -------------------------------------------------------------------------------
