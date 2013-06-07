@@ -45,6 +45,7 @@ import           Data.Word
 import           Massive.Debug
 import           Massive.Data.Decimal
 import           Massive.Data.Money
+import           Massive.Data.NEList
 import           Massive.Data.Password
 import           Text.Read                  (readMaybe)
 import           Text.Printf
@@ -92,7 +93,7 @@ instance (MongoValue α) ⇒ MongoValue (Maybe α) where
 instance (MongoValue α, MongoValue β) ⇒ MongoValue (Either α β) where
   toValue (Left  x) = Bson.Doc [ "_type" Bson.:= (Bson.String "left" ), "value" Bson.:= toValue x ]
   toValue (Right y) = Bson.Doc [ "_type" Bson.:= (Bson.String "right"), "value" Bson.:= toValue y ]
-  
+
   fromValue (Bson.Doc doc) = do
     side ← doc `lookupThrow` "_type"
     case side of
@@ -105,7 +106,15 @@ instance (MongoValue α) ⇒ MongoValue [α] where
   toValue = Bson.Array ∘ map toValue
   fromValue (Bson.Array xs) = mapM fromValue xs
   fromValue v               = expected "array" v
-  
+
+instance (MongoValue α) ⇒ MongoValue (NEList α) where
+  toValue = toValue ∘ toListNE
+  fromValue v = do
+    xss ← fromValue v
+    case xss of
+      []       → throwError "expected non-empty list"
+      (x : xs) → return (NEList x xs)
+
 instance MongoValue UTCTime where
   toValue = Bson.UTC
   fromValue (Bson.UTC x) = pure x
@@ -206,7 +215,7 @@ instance MongoValue ObjectId where
   toValue = Bson.ObjId
   fromValue (Bson.ObjId x) = pure x
   fromValue v              = expected "ObjectId" v
-  
+
 instance (MongoValue α, MongoValue β) ⇒ MongoValue (α, β) where
   toValue (x, y) = Bson.Array [toValue x, toValue y]
   fromValue v @ (Bson.Array xs) =
@@ -214,7 +223,7 @@ instance (MongoValue α, MongoValue β) ⇒ MongoValue (α, β) where
       [x, y] → (,) <$> fromValue x <*> fromValue y
       _      → expected "array with two elements" v
   fromValue v = expected "array with two elements" v
-  
+
 -- | Instance of the 'MongoValue' type class for a map of strict 'T.Text' to
 -- some value which is also an instance of the 'MongoValue' type class. This
 -- type class instance is provided for more efficient storage of maps with
@@ -297,14 +306,14 @@ expected what was =
     describeType (Bson.Stamp   _) = "Stamp"
     describeType (Bson.MinMax  _) = "MinMax"
 
-------------------------------------------------------------------------------- 
+-------------------------------------------------------------------------------
 
 lookupMaybe ∷ Bson.Document → T.Text → Maybe Bson.Value
 lookupMaybe doc name =
   maybe Nothing (Just ∘ Bson.value) $ find ((name ≡) ∘ Bson.label) doc
-                                            
+
 lookupThrow ∷ (Applicative μ, Monad μ, MongoValue α) ⇒ Bson.Document → T.Text → ErrorT String μ α
-lookupThrow doc name =                                             
+lookupThrow doc name =
   case lookupMaybe doc name of
     Just val → fromValue val
     Nothing  → throwError $ printf "could not find field '%s'" (T.unpack name)
