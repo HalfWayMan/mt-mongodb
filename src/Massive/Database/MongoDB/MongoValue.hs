@@ -37,6 +37,7 @@ import           Data.Int
 import           Data.List                  (find)
 import qualified Data.Map                   as M
 import           Data.Ratio
+import           Data.String
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Data.Text.Lazy             as LT
@@ -60,9 +61,17 @@ class MongoValue α where
 
 -------------------------------------------------------------------------------
 
+instance IsString Bson.Value where
+  fromString = Bson.String ∘ T.pack
+
 instance MongoValue Bson.Value where
   toValue   = id
   fromValue = pure
+
+instance MongoValue Bson.Function where
+  toValue = Bson.Fun
+  fromValue (Bson.Fun func) = pure func
+  fromValue v               = expected "function" v
 
 instance MongoValue () where
   toValue   ()        = Bson.Null

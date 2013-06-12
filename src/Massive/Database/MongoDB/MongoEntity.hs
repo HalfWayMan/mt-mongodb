@@ -15,7 +15,7 @@
 module Massive.Database.MongoDB.MongoEntity ( MongoEntity (..)
                                             , CollectionName
                                             , module Massive.Database.MongoDB.MongoValue
-                                            , (.:), (.:?), (.!=), (≕), (=:)
+                                            , (.:), (.:?), (.!=), (≕), (=:), (=::)
                                             ) where
 
 import           Prelude.Unicode
@@ -38,7 +38,7 @@ type CollectionName = T.Text
 
 class (MongoValue (Key α)) ⇒ MongoEntity α where
   data Key α
-  
+
   toKey          ∷ ObjectId → Key α
   fromKey        ∷ Key α → ObjectId
   toDocument     ∷ α → Bson.Document
@@ -67,7 +67,7 @@ instance (MongoEntity α) ⇒ Serial (Key α) where
   put =
     let f (Oid x y) = put x <> put y
     in f ∘ fromKey
-  
+
   get =
     (toKey ./ Oid) <$> get <*> get
 
@@ -84,6 +84,9 @@ instance (MongoEntity α) ⇒ Serial (Key α) where
 
 (=:) ∷ (MongoValue α) ⇒ T.Text → α → Bson.Field
 (=:) name val = (Bson.:=) name (toValue val)
+
+(=::) ∷ T.Text → Bson.Document → Bson.Field
+(=::) name doc = (Bson.:=) name (Bson.Doc doc)
 
 (≕) ∷ (MongoValue α) ⇒ T.Text → α → Bson.Field
 (≕) = (=:)
