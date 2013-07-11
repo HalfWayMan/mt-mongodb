@@ -1,6 +1,5 @@
--- -*- mode: Haskell; fill-column: 79; default-justification: left;         -*-
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings                               #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings                                                                       #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Types
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -9,7 +8,7 @@
 --
 -- Various useful types.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.Types ( Entity (..)
                                       , Collection (..)
@@ -27,7 +26,7 @@ import           Text.Read                            (readMaybe)
 
 import           Massive.Database.MongoDB.MongoEntity
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- | The 'Entity' data type is used to pair a type serialised from the database
 -- with it's unique key.
@@ -50,7 +49,7 @@ instance (MongoEntity α, Aeson.ToJSON α) ⇒ Aeson.ToJSON (Entity α) where
          other              → Aeson.object [ "id"    Aeson..= key
                                            , "value" Aeson..= other ]
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- | A collection of some type. This is represented as a list of 'Entity'.
 newtype Collection α = Collection { unCollection ∷ [Entity α] }

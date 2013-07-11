@@ -1,5 +1,5 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings                               #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings                                                                       #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Config
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -8,7 +8,7 @@
 --
 -- MongoDB configuration.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.Config ( DatabaseConfig (..)
                                        ) where
@@ -22,7 +22,7 @@ import qualified Data.Text                            as T
 
 import           Massive.Database.MongoDB.MongoEntity
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 data DatabaseConfig = DatabaseConfig { dbConfigHost     ∷ T.Text
                                      , dbConfigDatabase ∷ T.Text

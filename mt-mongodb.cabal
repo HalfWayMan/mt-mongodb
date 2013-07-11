@@ -1,6 +1,7 @@
 name:              mt-mongodb
-version:           0.1.0
-license:           AllRightsReserved
+version:           0.2.1
+license:           BSD3
+license-file:      LICENSE
 copyright:         Copyright (C) 2012 Massive Tactical Limited
 category:          Database
 synopsis:          Interface for MongoDB
@@ -15,15 +16,34 @@ bug-reports:       https://github.com/MassiveTactical/mt-mongodb/issues
 
 -------------------------------------------------------------------------------
 
+source-repository head
+  type:     git
+  location: git://github.com/MassiveTactical/mt-mongodb.git
+
+-------------------------------------------------------------------------------
+
+flag with-mt-shared
+  description:      Compile with the `mt-shared` library and provide instances
+                    for the types found therein.
+  default:          False
+
+flag no-examples
+  description:      Do not build the examples.
+  default:          False
+
+-------------------------------------------------------------------------------
+
 library
   hs-source-dirs:   src
   exposed-modules:  Massive.Database.MongoDB
                     Massive.Database.MongoDB.Config
                     Massive.Database.MongoDB.Expr
+                    Massive.Database.MongoDB.FilterOps
                     Massive.Database.MongoDB.MongoValue
                     Massive.Database.MongoDB.MongoEntity
                     Massive.Database.MongoDB.Operations
                     Massive.Database.MongoDB.Pool
+                    Massive.Database.MongoDB.Template
                     Massive.Database.MongoDB.Types
   ghc-options:      -Wall
   default-language: Haskell2010
@@ -38,7 +58,6 @@ library
                   , haskell-src-exts              >= 1.12
                   , monad-control                 >= 0.3
                   , mongoDB                       >= 1.3
-                  , mt-shared
                   , mtl                           >= 2.1
                   , parsec                        >= 3.1
                   , time                          >= 1.4
@@ -46,3 +65,77 @@ library
                   , text                          >= 0.11
                   , transformers                  >= 0.3
                   , unordered-containers          >= 0.2
+  if flag(with-mt-shared)
+    build-depends:  mt-shared
+    ghc-options:    -DWITH_MT_SHARED
+
+-------------------------------------------------------------------------------
+
+executable example1
+  if flag(no-examples)
+    buildable:      False
+
+  hs-source-dirs:   src, examples
+  main-is:          example1.hs
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  build-depends:    aeson                         >= 0.6
+                  , base                          >= 4
+                  , base-unicode-symbols          >= 0.2
+                  , base64-bytestring             >= 1.0
+                  , bson                          >= 0.2
+                  , bytestring                    >= 0.10
+                  , containers                    >= 0.5
+                  , data-default                  >= 0.5
+                  , haskell-src-exts              >= 1.12
+                  , monad-control                 >= 0.3
+                  , mongoDB                       >= 1.3
+                  , mtl                           >= 2.1
+                  , old-locale
+                  , parsec                        >= 3.1
+                  , time                          >= 1.4
+                  , template-haskell
+                  , text                          >= 0.11
+                  , transformers                  >= 0.3
+                  , unordered-containers          >= 0.2
+                  , mt-mongodb
+
+-------------------------------------------------------------------------------
+
+executable example2
+  if flag(no-examples)
+    buildable:      False
+
+  hs-source-dirs:   src, examples
+  main-is:          example2.hs
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  build-depends:    aeson                         >= 0.6
+                  , base                          >= 4
+                  , base-unicode-symbols          >= 0.2
+                  , base64-bytestring             >= 1.0
+                  , bson                          >= 0.2
+                  , bytestring                    >= 0.10
+                  , containers                    >= 0.5
+                  , data-default                  >= 0.5
+                  , haskell-src-exts              >= 1.12
+                  , monad-control                 >= 0.3
+                  , mongoDB                       >= 1.3
+                  , mtl                           >= 2.1
+                  , old-locale
+                  , parsec                        >= 3.1
+                  , time                          >= 1.4
+                  , template-haskell
+                  , text                          >= 0.11
+                  , transformers                  >= 0.3
+                  , unordered-containers          >= 0.2
+                  , mt-mongodb
+
+-------------------------------------------------------------------------------
+
+test-suite test
+  type:             exitcode-stdio-1.0
+  main-is:          test/main.hs
+  hs-source-dirs:   src
+  default-language: Haskell2010
+  ghc-options:      -Wall

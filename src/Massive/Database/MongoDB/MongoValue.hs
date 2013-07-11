@@ -1,8 +1,7 @@
--- -*- mode: Haskell; fill-column: 79; default-justification: left;         -*-
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TupleSections                #-}
-{-# LANGUAGE FlexibleInstances, TemplateHaskell                             #-}
-{-# OPTIONS_GHC -fno-warn-orphans                                           #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE CPP, UnicodeSyntax, OverloadedStrings, TupleSections                                                   #-}
+{-# LANGUAGE FlexibleInstances, TemplateHaskell                                                                     #-}
+{-# OPTIONS_GHC -fno-warn-orphans                                                                                   #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.MongoValue
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -11,7 +10,7 @@
 --
 -- Marshall values to and from MongoDB.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.MongoValue ( MongoValue (..)
                                            , Bson.Value (..)
@@ -32,26 +31,28 @@ import           Data.Bson                  (ObjectId (..))
 import qualified Data.Bson                  as Bson
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as LBS
-import qualified Data.ByteString.Base64.URL as Base64U
 import           Data.Int
 import           Data.List                  (find)
 import qualified Data.Map                   as M
 import           Data.Ratio
 import           Data.String
 import qualified Data.Text                  as T
-import qualified Data.Text.Encoding         as TE
 import qualified Data.Text.Lazy             as LT
 import           Data.Time
 import           Data.Word
-import           Massive.Debug
+import           Text.Read                  (readMaybe)
+import           Text.Printf
+
+#ifdef WITH_MT_SHARED
+import qualified Data.ByteString.Base64.URL as Base64U
+import qualified Data.Text.Encoding         as TE
 import           Massive.Data.Decimal
 import           Massive.Data.Money
 import           Massive.Data.NEList
 import           Massive.Data.Password
-import           Text.Read                  (readMaybe)
-import           Text.Printf
+#endif
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- | Any type that can be converted to a MongoDB value should be an instance of
 -- this type class.
@@ -59,7 +60,7 @@ class MongoValue α where
   toValue   ∷ α → Bson.Value
   fromValue ∷ (Applicative μ, Monad μ) ⇒ Bson.Value → ErrorT String μ α
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 instance IsString Bson.Value where
   fromString = Bson.String ∘ T.pack
@@ -115,14 +116,6 @@ instance (MongoValue α) ⇒ MongoValue [α] where
   toValue = Bson.Array ∘ map toValue
   fromValue (Bson.Array xs) = mapM fromValue xs
   fromValue v               = expected "array" v
-
-instance (MongoValue α) ⇒ MongoValue (NEList α) where
-  toValue = toValue ∘ toListNE
-  fromValue v = do
-    xss ← fromValue v
-    case xss of
-      []       → throwError "expected non-empty list"
-      (x : xs) → return (NEList x xs)
 
 instance MongoValue UTCTime where
   toValue = Bson.UTC
@@ -190,22 +183,6 @@ instance MongoValue Integer where
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
   fromValue v              = expected "Int64" v
 
-instance (MongoValue α) ⇒ MongoValue (Decimal α) where
-  toValue (Decimal p v) = toValue (p, v)
-  fromValue v = do
-    (p, n) ← fromValue v
-    pure $! Decimal p n
-
-instance MongoValue Currency where
-  toValue = toValue ∘ fromEnum
-  fromValue v = toEnum <$> fromValue v
-
-instance MongoValue Money where
-  toValue (Money c v) = toValue (c, v)
-  fromValue v = do
-    (c, v') ← fromValue v
-    pure $! Money c v'
-
 instance (Integral α, MongoValue α) ⇒ MongoValue (Ratio α) where
   toValue     = toValue ∘ (numerator &&& denominator)
   fromValue v = uncurry (%) <$> fromValue v
@@ -252,6 +229,34 @@ instance (Ord α, MongoValue α, MongoValue β) ⇒ MongoValue (M.Map α β) whe
   toValue = toValue ∘ M.toList
   fromValue v = M.fromList <$> fromValue v
 
+-----------------------------------------------------------------------------------------------------------------------
+
+#ifdef WITH_MT_SHARED
+
+instance (MongoValue α) ⇒ MongoValue (NEList α) where
+  toValue = toValue ∘ toListNE
+  fromValue v = do
+    xss ← fromValue v
+    case xss of
+      []       → throwError "expected non-empty list"
+      (x : xs) → return (NEList x xs)
+
+instance (MongoValue α) ⇒ MongoValue (Decimal α) where
+  toValue (Decimal p v) = toValue (p, v)
+  fromValue v = do
+    (p, n) ← fromValue v
+    pure $! Decimal p n
+
+instance MongoValue Currency where
+  toValue = toValue ∘ fromEnum
+  fromValue v = toEnum <$> fromValue v
+
+instance MongoValue Money where
+  toValue (Money c v) = toValue (c, v)
+  fromValue v = do
+    (c, v') ← fromValue v
+    pure $! Money c v'
+
 instance MongoValue Password where
   toValue (Password (salt, hash)) =
     toValue (salt, TE.decodeUtf8 ∘ Base64U.encode $ hash)
@@ -261,7 +266,9 @@ instance MongoValue Password where
       Left msg → $(failFmt "failed to parse password: %s") msg
       Right ha → pure (Password (salt, ha))
 
--------------------------------------------------------------------------------
+#endif
+
+-----------------------------------------------------------------------------------------------------------------------
 
 instance Aeson.ToJSON Bson.ObjectId where
   toJSON = Aeson.String ∘ T.pack ∘ show
@@ -270,10 +277,10 @@ instance Aeson.FromJSON Bson.ObjectId where
   parseJSON (Aeson.String x) =
     case readMaybe (T.unpack x) of
       Just oid → pure oid
-      Nothing  → $(failMsg "cannot read '%s' as an ObjectId") (T.unpack x)
+      Nothing  → fail $ printf "cannot read '%s' as an ObjectId" (T.unpack x)
   parseJSON _ = mzero
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- | Represents a null 'ObjectId' (all zeros).
 nullObjectId ∷ ObjectId
@@ -283,7 +290,7 @@ nullObjectId = Oid 0 0
 newObjectId ∷ (MonadIO μ) ⇒ μ ObjectId
 newObjectId = liftIO $ Bson.genObjectId
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- | When converting a MongoDB 'Bson.Value' to a concrete value it can be
 -- useful to indicate that the wrong type of 'Bson.Value' was encountered,
@@ -315,7 +322,7 @@ expected what was =
     describeType (Bson.Stamp   _) = "Stamp"
     describeType (Bson.MinMax  _) = "MinMax"
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 lookupMaybe ∷ Bson.Document → T.Text → Maybe Bson.Value
 lookupMaybe doc name =

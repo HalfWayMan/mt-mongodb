@@ -1,7 +1,6 @@
--- -*- mode: Haskell; fill-column: 79; default-justification: left;         -*-
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TypeFamilies                 #-}
-{-# LANGUAGE FlexibleContexts                                               #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE CPP, UnicodeSyntax, OverloadedStrings, TypeFamilies                                                    #-}
+{-# LANGUAGE FlexibleContexts                                                                                       #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.MongoEntity
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -10,7 +9,7 @@
 --
 -- Provides the 'MongoEntity' type class.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.MongoEntity ( MongoEntity (..)
                                             , CollectionName
@@ -25,26 +24,51 @@ import           Control.Monad.Error
 import qualified Data.Aeson                          as Aeson
 import qualified Data.Bson                           as Bson
 import           Data.Maybe                          (fromMaybe)
-import           Data.Monoid
 import qualified Data.Text                           as T
-import           Massive.Control.Combinators
+
+#ifdef WITH_MT_SHARED
+import           Data.Monoid
 import           Massive.Data.Serial
+#endif
 
 import           Massive.Database.MongoDB.MongoValue
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 type CollectionName = T.Text
+type FieldName      = T.Text
 
 class (MongoValue (Key α)) ⇒ MongoEntity α where
-  data Key α
+  data Key      α
+  data Filter   α
+  data Document α
 
-  toKey          ∷ ObjectId → Key α
-  fromKey        ∷ Key α → ObjectId
-  toDocument     ∷ α → Bson.Document
-  fromDocument   ∷ (Applicative μ, Monad μ) ⇒ Bson.Document → ErrorT String μ α
+  -- | Get the name of the collection to which this entity is to be stored.
+  collectionName  ∷ α → CollectionName
 
--------------------------------------------------------------------------------
+  -- | Yields the name of the corresponding field in a collection for a
+  --   given filter.
+  filterFieldName ∷ Filter α → FieldName
+
+  -- | Convert an 'ObjectId' to a 'Key'.
+  toKey           ∷ ObjectId → Key α
+
+  -- | Convert a 'Key' to an 'ObjectId'.
+  fromKey         ∷ Key α → ObjectId
+
+  -- | Convert a 'Bson.Document' to a 'Document'.
+  toDocument      ∷ Bson.Document → Document α
+
+  -- | Convert a 'Document' to a 'Bson.Document'.
+  fromDocument    ∷ Document α → Bson.Document
+
+  -- | Encode an object into a 'Document'.
+  encodeEntity    ∷ α → Document α
+
+  -- | Decode an object from a 'Document'; possibly failing.
+  decodeEntity    ∷ (Applicative μ, Monad μ) ⇒ Document α → ErrorT String μ α
+
+-----------------------------------------------------------------------------------------------------------------------
 
 instance (MongoEntity α) ⇒ MongoValue (Key α) where
   toValue                    = Bson.ObjId ∘ fromKey
@@ -63,6 +87,10 @@ instance (MongoEntity α) ⇒ Aeson.ToJSON (Key α) where
 instance (MongoEntity α) ⇒ Aeson.FromJSON (Key α) where
   parseJSON v = toKey <$> Aeson.parseJSON v
 
+-----------------------------------------------------------------------------------------------------------------------
+
+#ifdef WITH_MT_SHARED
+
 instance (MongoEntity α) ⇒ Serial (Key α) where
   put =
     let f (Oid x y) = put x <> put y
@@ -71,7 +99,9 @@ instance (MongoEntity α) ⇒ Serial (Key α) where
   get =
     (toKey ./ Oid) <$> get <*> get
 
--------------------------------------------------------------------------------
+#endif
+
+-----------------------------------------------------------------------------------------------------------------------
 
 (.:) ∷ (Applicative μ, Monad μ, MongoValue α) ⇒ Bson.Document → T.Text → ErrorT String μ α
 (.:) = lookupThrow

@@ -1,6 +1,5 @@
--- -*- mode: Haskell; fill-column: 79; default-justification: left;         -*-
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, DeriveDataTypeable           #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, DeriveDataTypeable                                                   #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Pool
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -9,7 +8,7 @@
 --
 -- Database connection pools.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.Pool ( ConnectionPool
                                      , createMongoDBPool
@@ -29,11 +28,11 @@ import qualified System.IO.Pool                  as Pool
 
 import           Massive.Database.MongoDB.Config
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 type ConnectionPool = (Pool.Pool IOError MongoDB.Pipe, MongoDB.Database)
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 connectMongoDB ∷ DatabaseConfig → MongoDB.IOE MongoDB.Pipe
 connectMongoDB config = do
@@ -65,7 +64,7 @@ runMongoDBConn (pool, databaseName) action = do
   res  ← MongoDB.access pipe (MongoDB.ConfirmWrites ["j" MongoDB.=: True]) databaseName action
   either (liftIO ∘ throwIO ∘ MongoDBError ∘ T.pack ∘ show) return res
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 data MongoDBError = MongoDBError T.Text
                   deriving (Show, Typeable)

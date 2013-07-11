@@ -1,5 +1,5 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TemplateHaskell              #-}
--------------------------------------------------------------------------------
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TemplateHaskell                                                      #-}
+-----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Expr
 -- Copyright  : (C) 2012 Massive Tactical Limited
@@ -8,7 +8,7 @@
 --
 -- Provides a quasi-quote parser for MongoDB expressions.
 --
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 module Massive.Database.MongoDB.Expr ( mongo
                                      ) where
@@ -22,14 +22,19 @@ import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Quote
 import qualified Language.Haskell.Exts as H
 import Massive.Database.MongoDB.MongoValue
+import Massive.Database.MongoDB.MongoEntity
 import Text.Parsec hiding (many, (<|>))
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 mongo ∷ QuasiQuoter
-mongo = QuasiQuoter { quoteExp = mongoQuote }
+mongo = QuasiQuoter { quoteExp  = mongoQuote
+                    , quotePat  = undefined
+                    , quoteType = undefined
+                    , quoteDec  = undefined
+                    }
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 mongoQuote ∷ String → Q Exp
 mongoQuote input = do
@@ -38,32 +43,33 @@ mongoQuote input = do
     Left err → error $ show err
     Right  e → return e
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 type Parser = ParsecT String () Q
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 parseMongo ∷ Parser Exp
 parseMongo = do
-  whitespace *> topObjectDef
+  ((VarE 'toDocument) `AppE`) <$> (whitespace *> topObjectDef)
   where
-    -- Root parser rule is either an object definition as "{ [fieldDef] }" or just "[fieldDef]".
+    -- Root parser rule is either an object definition as "{ [fieldDef] }"
+    -- or just "[fieldDef]".
     topObjectDef =
       objectDef <|> objectFields
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 whitespace ∷ Parser ()
 whitespace =
   skipMany ∘ satisfy $ isSpace
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 lexeme ∷ Parser α → Parser α
 lexeme = (<* whitespace)
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 -- An objectDef is a list of comma-separated fields surrounded by braces. The
 -- resulting expression is of the form ["fieldName" := toValue fieldValue, ...]
@@ -73,13 +79,13 @@ objectDef =
   *> (lexeme objectFields) <*
      (lexeme (char '}') <?> "'}' at end of JSON object")
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 objectFields ∷ Parser Exp
 objectFields =
   ListE <$> sepBy objectField (lexeme $ char ',')
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 objectField ∷ Parser Exp
 objectField = do
@@ -91,7 +97,7 @@ objectField = do
                  (ConE '(:=))
                  (Just (AppE (VarE 'toValue) val)))
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 arrayValue ∷ Parser Exp
 arrayValue = do
@@ -102,7 +108,7 @@ arrayValue = do
     arrayElements =
       ListE ∘ map ((VarE 'toValue) `AppE`) <$> sepBy (fieldValue <|> arrayValue <|> objectDef) (lexeme $ char ',')
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 fieldValue ∷ Parser Exp
 fieldValue =
@@ -145,7 +151,7 @@ fieldValue =
         H.ParseOk      expr → return (mapExpToTH expr)
         H.ParseFailed _ msg → parserFail msg
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 betweenBraces ∷ Parser String
 betweenBraces =
@@ -154,7 +160,7 @@ betweenBraces =
     insideBraces =
       ((\s → '{' : s ++ "}") <$> betweenBraces) <|> ((: []) <$> satisfy (/= '}'))
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 identifier ∷ Parser String
 identifier = try $ do
@@ -177,25 +183,25 @@ identifier = try $ do
         "query", "orderby", "explain", "snapshot", "min", "max", "showDiskLoc",
         "hint", "comment", "lt", "lte", "gt", "gte" ]
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 stringLiteral ∷ Parser String
 stringLiteral =
   (foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar)) <?> "string literal"
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 stringChar ∷ Parser (Maybe Char)
 stringChar =
   (Just <$> stringLetter) <|> stringEscape <?> "string character"
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 stringLetter ∷ Parser Char
 stringLetter =
   satisfy (\c → (c /= '"') && (c /= '\\') && (c > '\026'))
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 stringEscape ∷ Parser (Maybe Char)
 stringEscape =
@@ -234,7 +240,7 @@ stringEscape =
                     '\DLE', '\DC1', '\DC2', '\DC3', '\DC4', '\NAK', '\SYN', '\ETB',
                     '\CAN', '\SUB', '\ESC', '\DEL' ]
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 numberBuilder ∷ Integer → Parser Char → Parser Integer
 numberBuilder base baseDigit = do
@@ -242,12 +248,12 @@ numberBuilder base baseDigit = do
   let n = foldl (\ x d → base * x + toInteger (digitToInt d)) 0 digits
   seq n (return n)
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 decimal ∷ Parser Integer
 decimal = numberBuilder 10 digit
 
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 
 mapQName :: H.QName -> Name
 mapQName (H.Qual modu name) = Name (OccName $ strFromName name) (NameQ (ModName $ strFromModule modu))
