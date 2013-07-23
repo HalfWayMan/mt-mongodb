@@ -46,6 +46,7 @@ import           Text.Printf
 #ifdef WITH_MT_SHARED
 import qualified Data.ByteString.Base64.URL as Base64U
 import qualified Data.Text.Encoding         as TE
+import           Massive.Debug
 import           Massive.Data.Decimal
 import           Massive.Data.Money
 import           Massive.Data.NEList

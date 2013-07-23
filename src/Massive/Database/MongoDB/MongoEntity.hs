@@ -28,6 +28,7 @@ import qualified Data.Text                           as T
 
 #ifdef WITH_MT_SHARED
 import           Data.Monoid
+import           Massive.Control.Combinators
 import           Massive.Data.Serial
 #endif
 

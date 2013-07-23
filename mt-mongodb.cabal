@@ -136,6 +136,5 @@ executable example2
 test-suite test
   type:             exitcode-stdio-1.0
   main-is:          test/main.hs
-  hs-source-dirs:   src
   default-language: Haskell2010
   ghc-options:      -Wall
