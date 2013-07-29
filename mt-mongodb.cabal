@@ -1,5 +1,5 @@
 name:              mt-mongodb
-version:           0.2.1
+version:           0.2.2
 license:           BSD3
 license-file:      LICENSE
 copyright:         Copyright (C) 2012 Massive Tactical Limited
@@ -25,11 +25,11 @@ source-repository head
 flag with-mt-shared
   description:      Compile with the `mt-shared` library and provide instances
                     for the types found therein.
-  default:          False
+  default:          True
 
 flag no-examples
   description:      Do not build the examples.
-  default:          False
+  default:          True
 
 -------------------------------------------------------------------------------
 

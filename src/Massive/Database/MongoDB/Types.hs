@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings                                                                       #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TupleSections                                                        #-}
 -----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Types
@@ -48,6 +48,12 @@ instance (MongoEntity α, Aeson.ToJSON α) ⇒ Aeson.ToJSON (Entity α) where
          (Aeson.Object obj) → Aeson.Object $ HM.insert "id" (Aeson.toJSON key) obj
          other              → Aeson.object [ "id"    Aeson..= key
                                            , "value" Aeson..= other ]
+
+instance (MongoEntity a, Aeson.FromJSON a) => Aeson.FromJSON (Entity a) where
+  parseJSON val @ (Aeson.Object obj) = do
+    objId <- obj Aeson..: "id"
+    Entity objId <$> Aeson.parseJSON val
+  parseJSON _ = fail "expected object for entity"
 
 -----------------------------------------------------------------------------------------------------------------------
 
