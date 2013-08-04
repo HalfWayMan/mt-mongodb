@@ -240,11 +240,11 @@ getFrom collection key = do
         ((either fail (return ∘ Just) =<<) ∘ runErrorT ∘ decodeEntity ∘ toDocument) result
 
 -- | The application of 'get' to many keys.
-getMany ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒ [Key α] ⇒ MongoDB.Action μ [Maybe α]
+getMany ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒ [Key α] → MongoDB.Action μ [Maybe α]
 getMany = mapM get
 
 -- | Similar to 'getMany', except allows you to override the collection name.
-getManyFrom  ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒ CollectionName → [Key α] ⇒ MongoDB.Action μ [Maybe α]
+getManyFrom  ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒ CollectionName → [Key α] → MongoDB.Action μ [Maybe α]
 getManyFrom collection = mapM (getFrom collection)
 
 -----------------------------------------------------------------------------------------------------------------------
