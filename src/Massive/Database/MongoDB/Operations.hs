@@ -127,15 +127,15 @@ findAllIn collection = selectFrom collection (toDocument []) []
 
 -----------------------------------------------------------------------------------------------------------------------
 
-type SelectorOption = MongoDB.Query → MongoDB.Query
+type SelectorOption α = MongoDB.Query → MongoDB.Query
 
-offset ∷ Int → SelectorOption
+offset ∷ Int → SelectorOption α
 offset n q = q { MongoDB.skip = fromIntegral n }
 
-limit ∷ Int → SelectorOption
+limit ∷ Int → SelectorOption α
 limit n q = q { MongoDB.limit = fromIntegral n }
 
-orderAsc, orderDesc ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → SelectorOption
+orderAsc, orderDesc ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → SelectorOption α
 orderAsc  f q = q { MongoDB.sort = (filterFieldName (f undefined) =: (  1  ∷ Int)) : MongoDB.sort q }
 orderDesc f q = q { MongoDB.sort = (filterFieldName (f undefined) =: ((-1) ∷ Int)) : MongoDB.sort q }
 
@@ -155,13 +155,13 @@ orderDesc f q = q { MongoDB.sort = (filterFieldName (f undefined) =: ((-1) ∷ I
 --           rather than the fields of the record structure.
 --
 select ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
-         Document α → [SelectorOption] → MongoDB.Action μ (Collection α)
+         Document α → [SelectorOption α] → MongoDB.Action μ (Collection α)
 select document options =
   selectFrom (collectionName (dummyFromDocument document)) document options
 
 -- | Similar to 'select', except allows you to override the collection from which the entities are selected.
 selectFrom ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
-             CollectionName → Document α → [SelectorOption] → MongoDB.Action μ (Collection α)
+             CollectionName → Document α → [SelectorOption α] → MongoDB.Action μ (Collection α)
 selectFrom collection document options = do
   cursor  ← MongoDB.find (foldr ($) (MongoDB.select (fromDocument document) collection) options)
   objects ← MongoDB.rest cursor
@@ -169,13 +169,13 @@ selectFrom collection document options = do
 
 -- | Similar to 'select', except will only yield zero or one result.
 selectOne ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
-            Document α → [SelectorOption] → MongoDB.Action μ (Maybe (Entity α))
+            Document α → [SelectorOption α] → MongoDB.Action μ (Maybe (Entity α))
 selectOne document options =
   selectOneFrom (collectionName (dummyFromDocument document)) document options
 
 -- | Similar to 'selectFrom', except will only yield zero or one result.
 selectOneFrom ∷ (Applicative μ, MonadIO μ, MonadBaseControl IO μ, MongoEntity α) ⇒
-                CollectionName → Document α → [SelectorOption] → MongoDB.Action μ (Maybe (Entity α))
+                CollectionName → Document α → [SelectorOption α] → MongoDB.Action μ (Maybe (Entity α))
 selectOneFrom collection document options = do
   mResult ← MongoDB.findOne (foldr ($) (MongoDB.select (fromDocument document) collection) options)
   case mResult of
@@ -218,10 +218,10 @@ updateWhere ∷ (Applicative μ, MonadIO μ, MongoEntity α) ⇒ Document α →
 updateWhere document updateDoc =
   MongoDB.modify (MongoDB.select (fromDocument document) (collectionName (dummyFromDocument document))) (fromDocument updateDoc)
 
-filters ∷ (MongoEntity α) ⇒ [FilterOp] → Document α
+filters ∷ (MongoEntity α) ⇒ [FilterOp α] → Document α
 filters = toDocument
 
-updates ∷ (MongoEntity α) ⇒ [UpdateOp] → Document α
+updates ∷ (MongoEntity α) ⇒ [UpdateOp α] → Document α
 updates = toDocument
 
 -----------------------------------------------------------------------------------------------------------------------

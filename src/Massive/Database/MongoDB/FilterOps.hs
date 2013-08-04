@@ -32,13 +32,13 @@ import           Massive.Database.MongoDB.MongoEntity
 
 -----------------------------------------------------------------------------------------------------------------------
 
-type FilterOp = Bson.Field
+type FilterOp α = Bson.Field
 
-stdFilterDef ∷ (MongoEntity α, MongoValue β) ⇒ Bson.Label → (β → Filter α) → β → FilterOp
+stdFilterDef ∷ (MongoEntity α, MongoValue β) ⇒ Bson.Label → (β → Filter α) → β → FilterOp α
 stdFilterDef op f v =
   filterFieldName (f undefined) =: Bson.Doc [op =: toValue v]
 
-eq, neq, lt, lte, gt, gte ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → β → FilterOp
+eq, neq, lt, lte, gt, gte ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → β → FilterOp α
 eq f v = filterFieldName (f undefined) =: toValue v
 neq    = stdFilterDef "$ne"
 lt     = stdFilterDef "$lt"
@@ -46,39 +46,39 @@ lte    = stdFilterDef "$lte"
 gt     = stdFilterDef "$gt"
 gte    = stdFilterDef "$gte"
 
-or ∷ FilterOp → FilterOp → FilterOp
+or ∷ FilterOp α → FilterOp α → FilterOp α
 or x y = "$or" =: Bson.Doc [x, y]
 
-ors ∷ [FilterOp] → FilterOp
+ors ∷ [FilterOp α] → FilterOp α
 ors fs = "$or" =: Bson.Doc fs
 
-isIn, notIn ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → [β] → FilterOp
+isIn, notIn ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → [β] → FilterOp α
 isIn  f vs = filterFieldName (f undefined) =: Bson.Doc [ "$in" =: Bson.Array (map toValue vs)]
 notIn f vs = filterFieldName (f undefined) =: Bson.Doc ["$nin" =: Bson.Array (map toValue vs)]
 
 -----------------------------------------------------------------------------------------------------------------------
 
-type UpdateOp = Bson.Field
+type UpdateOp α = Bson.Field
 
-set ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → β → UpdateOp
+set ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → β → UpdateOp α
 set f v = "$set" =: Bson.Doc [filterFieldName (f v) =: toValue v]
 
-inc, dec ∷ (MongoEntity α, Num β, MongoValue β) ⇒ (β → Filter α) → β → UpdateOp
+inc, dec ∷ (MongoEntity α, Num β, MongoValue β) ⇒ (β → Filter α) → β → UpdateOp α
 inc f v = "$inc" =: Bson.Doc [filterFieldName (f v) =: toValue v]
 dec f v = "$dec" =: Bson.Doc [filterFieldName (f v) =: toValue v]
 
-push, addToSet, pull ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → β → UpdateOp
+push, addToSet, pull ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → β → UpdateOp α
 push     f v = "$push"     =: Bson.Doc [filterFieldName (f       [v]) =: toValue v]
 addToSet f v = "$addToSet" =: Bson.Doc [filterFieldName (f undefined) =: toValue v]
 pull     f v = "$pull"     =: Bson.Doc [filterFieldName (f undefined) =: toValue v]
 
-pushAll, pullAll, addManyToSet ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → [β] → UpdateOp
+pushAll, pullAll, addManyToSet ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → [β] → UpdateOp α
 pushAll      f v = "$pushAll"      =: Bson.Doc [filterFieldName (f undefined) =:                      Bson.Array (map toValue v) ]
 pullAll      f v = "$pullAll"      =: Bson.Doc [filterFieldName (f undefined) =:                      Bson.Array (map toValue v) ]
 addManyToSet f v = "$addManyToSet" =: Bson.Doc [filterFieldName (f undefined) =: Bson.Doc ["$each" =: Bson.Array (map toValue v)]]
 
-pop ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → UpdateOp
+pop ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → UpdateOp α
 pop f = "$pop" =: Bson.Doc [filterFieldName (f undefined) =: Bson.Int32 1]
 
-popMany ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → Int → UpdateOp
+popMany ∷ (MongoEntity α, MongoValue β) ⇒ ([β] → Filter α) → Int → UpdateOp α
 popMany f i = "$pop" =: Bson.Doc [filterFieldName (f undefined) =: Bson.Int32 (fromIntegral i)]
