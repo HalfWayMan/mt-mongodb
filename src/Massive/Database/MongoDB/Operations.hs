@@ -136,8 +136,8 @@ limit ∷ Int → SelectorOption α
 limit n q = q { MongoDB.limit = fromIntegral n }
 
 orderAsc, orderDesc ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → SelectorOption α
-orderAsc  f q = q { MongoDB.sort = (filterFieldName (f undefined) =: (  1  ∷ Int)) : MongoDB.sort q }
-orderDesc f q = q { MongoDB.sort = (filterFieldName (f undefined) =: ((-1) ∷ Int)) : MongoDB.sort q }
+orderAsc  f q = q { MongoDB.sort = (filterFieldName (f undefined) Bson.=: (  1  ∷ Int)) : MongoDB.sort q }
+orderDesc f q = q { MongoDB.sort = (filterFieldName (f undefined) Bson.=: ((-1) ∷ Int)) : MongoDB.sort q }
 
 
 -- | Select all matching documents from the database. This function yields a 'Collection' of the matching entities
