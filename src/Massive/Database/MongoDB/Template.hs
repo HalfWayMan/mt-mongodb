@@ -273,11 +273,11 @@ genKeyDecls = do
   name  ← gets envTypeName
   name' ← gets envSimpleTypeName
   emitDecl $ NewtypeInstD [] ''Key [ConT name]
-                          (RecC (mkName $ name' ++ "Id")
+                          (RecC (mkName $ "Mk" ++ name' ++ "Id")
                                 [ (mkName $ "un" ++ name' ++ "Id", NotStrict, ConT ''ObjectId) ])
                           [ ''Eq ]
   emitDecl $ FunD (mkName "toKey")
-                  [ Clause [] (NormalB ∘ ConE ∘ mkName $ name' ++ "Id") [] ]
+                  [ Clause [] (NormalB ∘ ConE ∘ mkName $ "Mk" ++ name' ++ "Id") [] ]
   emitDecl $ FunD (mkName "fromKey")
                   [ Clause [] (NormalB ∘ VarE ∘ mkName $ "un" ++ name' ++ "Id") []]
 
@@ -312,7 +312,7 @@ genFilterDecl ∷ TemplateGen ()
 genFilterDecl = do
   name    ← gets envTypeName
   constrs ← gets envConstructors
-  let cons = catMaybes $ concatMap (\c → map (buildFieldCon (dropPrefix ∘ show ∘ constrName $ c)) (constrBody c)) constrs
+  let cons = (idCon name :) . catMaybes $ concatMap (\c → let cname = dropPrefix . show . constrName $ c in map (buildFieldCon cname) (constrBody c)) constrs
   emitDecl $ DataInstD [] ''Filter [ConT name]
                        (map fst cons)
                        []
@@ -322,10 +322,14 @@ genFilterDecl = do
      then emitDecl $ FunD (mkName "filterFieldName") clauses
      else emitDecl $ FunD (mkName "filterFieldName") [Clause [WildP] (NormalB ((VarE 'error) `AppE` (LitE $ StringL "no filters can be defined"))) []]
   where
+    idCon :: Name -> (Con, Name)
+    idCon name =
+      let cname = dropPrefix . show $ name
+      in (NormalC (mkName (cname ++ "Id")) [(NotStrict, (ConT ''Key) `AppT` (ConT name))], mkName "_id")
+
     buildFieldCon ∷ String → FieldDecl → Maybe (Con, Name)
     buildFieldCon cname (FieldDecl fname simpleName fType _) =
-      if ((dropPrefix ∘ show $ fname) == (uncapitalize cname ++ "Id")) ||
-         (simpleName == "_id")
+      if ((dropPrefix ∘ show $ fname) == (uncapitalize cname ++ "Id")) || (simpleName == "_id")
          then Nothing
          else Just (NormalC (mkName ∘ capitalize ∘ dropPrefix ∘ show $ fname) [(NotStrict, fType)], mkName simpleName)
     buildFieldCon _ (SimpleFieldDecl _ _) = Nothing

@@ -39,7 +39,7 @@ import           Massive.Database.MongoDB.MongoValue
 type CollectionName = T.Text
 type FieldName      = T.Text
 
-class (MongoValue (Key α)) ⇒ MongoEntity α where
+class (Eq (Key α), MongoValue (Key α)) ⇒ MongoEntity α where
   data Key      α
   data Filter   α
   data Document α
