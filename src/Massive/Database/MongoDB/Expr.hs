@@ -309,7 +309,7 @@ mapDecl (H.WarnPragmaDecl _ _) = error "No support for WARNING pragma in Templat
 --mapDecl (H.InlineSig _ _ _ name) = [PragmaD (InlineP (mapQName name) (InlineSpec True False Nothing))]
 mapDecl (H.InlineSig _ _ _ name) = [PragmaD (InlineP (mapQName name) Inline ConLike AllPhases)]
 mapDecl (H.InlineConlikeSig _ _ _) = error "No current support for INLINE CONLIKE pragma"
-mapDecl (H.SpecSig _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) Nothing AllPhases)]
+mapDecl (H.SpecSig _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) Nothing AllPhases)]
 --mapDecl (H.SpecInlineSig _ _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) (Just (InlineP (mapQName name) Inline ConLike AllPhases)) AllPhases)]
 --mapDecl (H.SpecInlineSig _ _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) (Just (InlineP (mapQName name) Inline ConLike AllPhases)) AllPhases)]
 mapDecl (H.SpecInlineSig _ _ _ _ _) = error "No support for inline specialisation signatures(???)"
@@ -324,6 +324,7 @@ mapCC other = error $ "no support for calling convention: " ++ show other
 mapSafety :: H.Safety -> Safety
 mapSafety (H.PlayRisky ) = Unsafe
 mapSafety (H.PlaySafe t) = if t then Interruptible else Safe
+mapSafety (H.PlayInterruptible) = Interruptible
 
 matchName :: H.Match -> Name
 matchName (H.Match _ name _ _ _ _) = mapName name
@@ -383,8 +384,8 @@ mapExpToTH (H.If             e t f) = CondE (mapExpToTH e) (mapExpToTH t) (mapEx
 mapExpToTH (H.Case            e ms) = CaseE (mapExpToTH e) (map mapAlt ms)
 mapExpToTH (H.Do                 s) = DoE (map mapStmt s)
 mapExpToTH (H.MDo                _) = error "No support for mdo expressions"
-mapExpToTH (H.Tuple             es) = TupE (map mapExpToTH es)
-mapExpToTH (H.TupleSection       _) = error "Tuple sections currently not supported by template haskell"
+mapExpToTH (H.Tuple           _ es) = TupE (map mapExpToTH es)
+mapExpToTH (H.TupleSection     _ _) = error "Tuple sections currently not supported by template haskell"
 mapExpToTH (H.List              es) = ListE (map mapExpToTH es)
 mapExpToTH (H.Paren              e) = mapExpToTH e
 mapExpToTH (H.LeftSection      e o) = InfixE (Just (mapExpToTH e)) (mapQOpToTH o) Nothing
@@ -464,7 +465,7 @@ mapPatToTH (H.PNeg           _) = error "What?! (http://trac.haskell.org/haskell
 mapPatToTH (H.PNPlusK      _ _) = error "No support for N+K patterns"
 mapPatToTH (H.PInfixApp  l n r) = InfixP (mapPatToTH l) (mapQName n) (mapPatToTH r)
 mapPatToTH (H.PApp         n p) = ConP (mapQName n) (map mapPatToTH p)
-mapPatToTH (H.PTuple         p) = TupP (map mapPatToTH p)
+mapPatToTH (H.PTuple       _ p) = TupP (map mapPatToTH p)
 mapPatToTH (H.PList          p) = ListP (map mapPatToTH p)
 mapPatToTH (H.PParen         p) = mapPatToTH p
 mapPatToTH (H.PRec        n pf) = RecP (mapQName n) (map mapPatFieldToTH pf)
