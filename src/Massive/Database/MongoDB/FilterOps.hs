@@ -15,6 +15,7 @@ module Massive.Database.MongoDB.FilterOps ( -- * Filtering Operations
                                           , eq, neq, lt, lte, gt, gte
                                           , or, ors
                                           , isIn, notIn
+                                          , hasElem
 
                                             -- * Update Operations
                                           , UpdateOp
@@ -45,6 +46,9 @@ lt     = stdFilterDef "$lt"
 lte    = stdFilterDef "$lte"
 gt     = stdFilterDef "$gt"
 gte    = stdFilterDef "$gte"
+
+hasElem :: (MongoEntity a, MongoValue b) => ([b] -> Filter a) -> b -> FilterOp a
+hasElem f v = filterFieldName (f undefined) =: toValue v
 
 or ∷ FilterOp α → FilterOp α → FilterOp α
 or x y = "$or" =: Bson.Doc [x, y]
