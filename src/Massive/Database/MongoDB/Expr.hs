@@ -15,7 +15,7 @@ module Massive.Database.MongoDB.Expr ( mongo
 
 import Prelude.Unicode
 import Control.Applicative
-import Data.Bson (Field ((:=)))
+import Data.Bson (Field ((:=)), Value (Doc))
 import Data.Char (isSpace, digitToInt)
 import Data.Text (Text)
 import Language.Haskell.TH.Syntax
@@ -91,7 +91,7 @@ objectField ∷ Parser Exp
 objectField = do
   name ← lexeme (identifier <|> stringLiteral) <?> "identifier for field definition"
   _    ← lexeme (char ':')
-  val  ← lexeme (fieldValue <|> arrayValue <|> objectDef) <?> ("value for field `" ++ name ++ "'")
+  val  ← lexeme (fieldValue <|> arrayValue <|>  (((ConE 'Doc) `AppE`) <$> objectDef)) <?> ("value for field `" ++ name ++ "'")
 
   return (InfixE (Just ∘ LitE ∘ StringL $ name)
                  (ConE '(:=))
