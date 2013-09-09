@@ -181,7 +181,7 @@ identifier = try $ do
       [ "all", "exists", "mod", "ne", "in", "nin", "nor", "or", "and",
         "size", "type", "elemMatch", "not", "where", "returnKey", "maxScan",
         "query", "orderby", "explain", "snapshot", "min", "max", "showDiskLoc",
-        "hint", "comment", "lt", "lte", "gt", "gte" ]
+        "hint", "comment", "lt", "lte", "gt", "gte", "set" ]
 
 -----------------------------------------------------------------------------------------------------------------------
 
