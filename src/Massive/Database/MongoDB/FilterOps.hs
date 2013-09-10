@@ -14,7 +14,6 @@ module Massive.Database.MongoDB.FilterOps ( -- * Filtering Operations
                                             FilterOp
                                           , eq, neq, lt, lte, gt, gte
                                           , or, ors
-                                          , isIn, notIn
                                           , hasElem
 
                                             -- * Update Operations
@@ -55,10 +54,6 @@ or x y = "$or" =: Bson.Doc [x, y]
 
 ors ∷ [FilterOp α] → FilterOp α
 ors fs = "$or" =: Bson.Doc fs
-
-isIn, notIn ∷ (MongoEntity α, MongoValue β) ⇒ (β → Filter α) → [β] → FilterOp α
-isIn  f vs = filterFieldName (f undefined) =: Bson.Doc [ "$in" =: Bson.Array (map toValue vs)]
-notIn f vs = filterFieldName (f undefined) =: Bson.Doc ["$nin" =: Bson.Array (map toValue vs)]
 
 -----------------------------------------------------------------------------------------------------------------------
 
