@@ -11,6 +11,7 @@ import Text.Printf
 
 data User = User { userName      ∷ Text
                  , userAlias     ∷ Text
+                 , userAge       :: Double
                  , userCreatedAt ∷ UTCTime
                  }
 
@@ -20,6 +21,7 @@ prettyUser ∷ Entity User → IO ()
 prettyUser (Entity userId user) = do
   void $ printf "%s:\n" (show userId)
   void $ printf "  User Name : %s\n" (T.unpack (userName user))
+  void $ printf "  User Age  : %f\n" (userAge user)
   void $ printf "  User Alias: %s\n" (T.unpack (userAlias user))
   void $ printf "  Created At: %s\n\n" (formatTime defaultTimeLocale "%F %T" (userCreatedAt user))
   return ()

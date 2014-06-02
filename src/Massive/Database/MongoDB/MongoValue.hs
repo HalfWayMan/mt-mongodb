@@ -137,51 +137,60 @@ instance MongoValue Word8 where
   toValue = Bson.Int32 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Word16 where
   toValue = Bson.Int32 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Word32 where
   toValue = Bson.Int64 ∘ fromIntegral
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int64" v
 
 instance MongoValue Int where
   toValue = Bson.Int64 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Int8 where
   toValue = Bson.Int32 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Int16 where
   toValue = Bson.Int32 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Int32 where
   toValue = Bson.Int32 ∘ fromIntegral
   fromValue (Bson.Int32 x) = pure $! fromIntegral x
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int32/Int64" v
 
 instance MongoValue Int64 where
   toValue = Bson.Int64 ∘ fromIntegral
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int64" v
 
 instance MongoValue Integer where
   toValue = Bson.Int64 ∘ fromIntegral
   fromValue (Bson.Int64 x) = pure $! fromIntegral x
+  fromValue (Bson.Float x) = pure $! round x
   fromValue v              = expected "Int64" v
 
 instance (Integral α, MongoValue α) ⇒ MongoValue (Ratio α) where
@@ -191,11 +200,15 @@ instance (Integral α, MongoValue α) ⇒ MongoValue (Ratio α) where
 instance MongoValue Float where
   toValue = Bson.Float ∘ realToFrac
   fromValue (Bson.Float x) = pure $! realToFrac x
+  fromValue (Bson.Int32 x) = pure $! fromIntegral x
+  fromValue (Bson.Int64 x) = pure $! fromIntegral x
   fromValue v              = expected "Double" v
 
 instance MongoValue Double where
   toValue = Bson.Float
   fromValue (Bson.Float x) = pure x
+  fromValue (Bson.Int32 x) = pure $! fromIntegral x
+  fromValue (Bson.Int64 x) = pure $! fromIntegral x
   fromValue v              = expected "Double" v
 
 instance MongoValue ObjectId where
