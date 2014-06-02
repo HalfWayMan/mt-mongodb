@@ -25,7 +25,7 @@ source-repository head
 flag with-mt-shared
   description:      Compile with the `mt-shared` library and provide instances
                     for the types found therein.
-  default:          True
+  default:          False
 
 flag no-examples
   description:      Do not build the examples.

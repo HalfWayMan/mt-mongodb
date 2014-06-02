@@ -480,7 +480,7 @@ mapPatToTH (H.PXETag   _ _ _ _) = error "No support for XML"
 mapPatToTH (H.PXPcdata       _) = error "No support for XML"
 mapPatToTH (H.PXPatTag       _) = error "No support for XML"
 mapPatToTH (H.PXRPats        _) = error "No support for XML"
-mapPatToTH (H.PExplTypeArg _ _) = error "No support for explicit type arguments"
+--mapPatToTH (H.PExplTypeArg _ _) = error "No support for explicit type arguments"
 mapPatToTH (H.PQuasiQuote  _ _) = error "No support for quasi-quotation"
 mapPatToTH (H.PBangPat       _) = error "No support for bang patterns"
 
