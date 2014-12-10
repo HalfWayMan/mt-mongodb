@@ -36,7 +36,7 @@ type ConnectionPool = (Pool.Pool IOError MongoDB.Pipe, MongoDB.Database)
 
 connectMongoDB ∷ DatabaseConfig → MongoDB.IOE MongoDB.Pipe
 connectMongoDB config = do
-  conn ← MongoDB.connect (MongoDB.host (T.unpack (dbConfigHost config)))
+  conn ← MongoDB.connect (MongoDB.Host (T.unpack (dbConfigHost config)) (MongoDB.PortNumber $ fromIntegral $ dbConfigPort config))
   _    ← case dbConfigUserPass config of
            Just (user, pass) → MongoDB.access conn MongoDB.UnconfirmedWrites
                                               (dbConfigDatabase config)

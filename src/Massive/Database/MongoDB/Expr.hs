@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TemplateHaskell                                                      #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, TemplateHaskell, TupleSections                                       #-}
 -----------------------------------------------------------------------------------------------------------------------
 -- |
 -- Module     : Massive.Database.MongoDB.Expr
@@ -293,14 +293,14 @@ mapDecl (H.DataInsDecl _ H.NewType  _   _        _    ) = error "No support for 
 mapDecl (H.GDataInsDecl _ _ _ _ _ _) = error "No support for GADTs in Template Haskell"
 mapDecl (H.ClassDecl _ ctx name binds funDeps classDecls) = [ClassD (mapContext ctx) (mapName name) (map mapTypeBind binds)
                                                                     (map mapFunDep funDeps) (map mapClassDecl classDecls)]
-mapDecl (H.InstDecl _ ctx _ types instDecls) = [InstanceD (mapContext ctx) (mapTypeToTH (head types)) (map mapInstDecl instDecls)]
-mapDecl (H.DerivDecl _ _ _ _) = error "No support for standalone deriving declarations in Template Haskell"
+mapDecl (H.InstDecl _ _ _ ctx _ types instDecls) = [InstanceD (mapContext ctx) (mapTypeToTH (head types)) (map mapInstDecl instDecls)]
+mapDecl (H.DerivDecl _ _ _ _ _ _) = error "No support for standalone deriving declarations in Template Haskell"
 mapDecl (H.InfixDecl _ _ _ _) = error "No support for operator fixity declarations in Template Haskell"
 mapDecl (H.DefaultDecl _ _) = error "No support for default declarations in Template Haskell"
 mapDecl (H.SpliceDecl _ _) = error "Template Haskell brackets cannot be nested (without intervening splices)"
 mapDecl (H.TypeSig _ names typ) = map (flip SigD (mapTypeToTH typ) . mapName) names
 mapDecl (H.FunBind matches) = [FunD (matchName (head matches)) (map mapClause matches)]
-mapDecl (H.PatBind _ pat _ rhs binds) = [ValD (mapPatToTH pat) (mapRhs rhs) (mapBinds binds)]
+mapDecl (H.PatBind _ pat rhs binds) = [ValD (mapPatToTH pat) (mapRhs rhs) (mapBinds binds)]
 mapDecl (H.ForImp _ cc safe str name typ) = [ForeignD (ImportF (mapCC cc) (mapSafety safe) str (mapName name) (mapTypeToTH typ))]
 mapDecl (H.ForExp _ cc str name typ) = [ForeignD (ExportF (mapCC cc) str (mapName name) (mapTypeToTH typ))]
 mapDecl (H.RulePragmaDecl _ _) = error "No support for RULES pragma in Template Haskell"
@@ -313,7 +313,7 @@ mapDecl (H.SpecSig _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapT
 --mapDecl (H.SpecInlineSig _ _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) (Just (InlineP (mapQName name) Inline ConLike AllPhases)) AllPhases)]
 --mapDecl (H.SpecInlineSig _ _ _ name types) = [PragmaD (SpecialiseP (mapQName name) (mapTypeToTH (head types)) (Just (InlineP (mapQName name) Inline ConLike AllPhases)) AllPhases)]
 mapDecl (H.SpecInlineSig _ _ _ _ _) = error "No support for inline specialisation signatures(???)"
-mapDecl (H.InstSig _ _ _ _) = error "No support for SPECIALISE instance pragma in Template Haskell (I think...)"
+mapDecl (H.InstSig _ _ _ _ _) = error "No support for SPECIALISE instance pragma in Template Haskell (I think...)"
 mapDecl (H.AnnPragma _ _) = error "No support for ANN pragma in Template Haskell"
 
 mapCC :: H.CallConv -> Callconv
@@ -356,18 +356,18 @@ mapQCon (H.QualConDecl _ []    []  conDecl) = mapCon conDecl
 mapQCon (H.QualConDecl _ binds ctx conDecl) = ForallC (map mapTypeBind binds) (mapContext ctx) (mapCon conDecl)
 
 mapCon :: H.ConDecl -> Con
-mapCon (H.ConDecl     name args) = NormalC (mapName name) (map mapBangType args)
-mapCon (H.InfixConDecl x name y) = InfixC (mapBangType x) (mapName name) (mapBangType y)
+mapCon (H.ConDecl     name args) = NormalC (mapName name) (map ((NotStrict, ) . mapTypeToTH) args)
+mapCon (H.InfixConDecl x name y) = InfixC (NotStrict, mapTypeToTH x) (mapName name) (NotStrict, mapTypeToTH y)
 mapCon (H.RecDecl   name fields) = RecC (mapName name) $ map (uncurry mapFieldDecl) $ concatMap (uncurry ((. repeat) . zip)) fields
 
-mapFieldDecl :: H.Name -> H.BangType -> VarStrictType
-mapFieldDecl name bType = let (strict, typ) = mapBangType bType
+mapFieldDecl :: H.Name -> H.Type -> VarStrictType
+mapFieldDecl name bType = let (strict, typ) = (NotStrict, mapTypeToTH bType)
                           in (mapName name, strict, typ)
 
-mapBangType :: H.BangType -> StrictType
-mapBangType (H.BangedTy   t) = (IsStrict,  mapTypeToTH t)
-mapBangType (H.UnBangedTy t) = (NotStrict, mapTypeToTH t)
-mapBangType (H.UnpackedTy _) = error "No support for unboxed type (via UNPACK pragma) in Template Haskell"
+-- mapBangType :: H.BangType -> StrictType
+-- mapBangType (H.BangedTy   t) = (IsStrict,  mapTypeToTH t)
+-- --mapBangType (H.UnBangedTy t) = (NotStrict, mapTypeToTH t)
+-- mapBangType (H.UnpackedTy _) = error "No support for unboxed type (via UNPACK pragma) in Template Haskell"
 
 
 mapExpToTH :: H.Exp -> Exp
@@ -431,12 +431,12 @@ mapFieldUpdate (H.FieldWildcard  ) = error "No support for field wildcards in up
 mapAlt :: H.Alt -> Match
 mapAlt (H.Alt _ p g bs) = Match (mapPatToTH p) (mapGuard g) (mapBinds bs)
 
-mapGuard :: H.GuardedAlts -> Body
-mapGuard (H.UnGuardedAlt e) = NormalB (mapExpToTH e)
-mapGuard (H.GuardedAlts gs) =
+mapGuard :: H.Rhs -> Body
+mapGuard (H.UnGuardedRhs e) = NormalB (mapExpToTH e)
+mapGuard (H.GuardedRhss gs) =
   GuardedB (map mapGAlt gs)
   where
-    mapGAlt (H.GuardedAlt _ stmts e) = (PatG (map mapStmt stmts), mapExpToTH e)
+    mapGAlt (H.GuardedRhs _ stmts e) = (PatG (map mapStmt stmts), mapExpToTH e)
 
 mapStmt :: H.Stmt -> Stmt
 mapStmt (H.Generator _ p e) = BindS (mapPatToTH p) (mapExpToTH e)
@@ -460,8 +460,8 @@ mapQOpToTHT (H.QConOp name) = ConT (mapQName name)
 
 mapPatToTH :: H.Pat -> Pat
 mapPatToTH (H.PVar        name) = VarP (mapName name)
-mapPatToTH (H.PLit         lit) = LitP (mapLitToTH lit)
-mapPatToTH (H.PNeg           _) = error "What?! (http://trac.haskell.org/haskell-src-exts/ticket/209)"
+mapPatToTH (H.PLit       _ lit) = LitP (mapLitToTH lit)
+--mapPatToTH (H.PNeg           _) = error "What?! (http://trac.haskell.org/haskell-src-exts/ticket/209)"
 mapPatToTH (H.PNPlusK      _ _) = error "No support for N+K patterns"
 mapPatToTH (H.PInfixApp  l n r) = InfixP (mapPatToTH l) (mapQName n) (mapPatToTH r)
 mapPatToTH (H.PApp         n p) = ConP (mapQName n) (map mapPatToTH p)

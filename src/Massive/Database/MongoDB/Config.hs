@@ -25,6 +25,7 @@ import           Massive.Database.MongoDB.MongoEntity
 -----------------------------------------------------------------------------------------------------------------------
 
 data DatabaseConfig = DatabaseConfig { dbConfigHost     ∷ T.Text
+                                     , dbConfigPort     :: Int
                                      , dbConfigDatabase ∷ T.Text
                                      , dbConfigUserPass ∷ Maybe (T.Text, T.Text)
                                      , dbConfigPoolSize ∷ Int
@@ -32,6 +33,7 @@ data DatabaseConfig = DatabaseConfig { dbConfigHost     ∷ T.Text
 
 instance Default DatabaseConfig where
   def = DatabaseConfig { dbConfigHost     = "localhost"
+                       , dbConfigPort     = 27017
                        , dbConfigDatabase = "test"
                        , dbConfigUserPass = Nothing
                        , dbConfigPoolSize = 5
@@ -39,6 +41,7 @@ instance Default DatabaseConfig where
 
 instance MongoValue DatabaseConfig where
   toValue dbConf = Bson.Doc [ "host"     ≕ dbConfigHost     dbConf
+                            , "port"     ≕ dbConfigPort     dbConf
                             , "database" ≕ dbConfigDatabase dbConf
                             , "userpass" ≕ dbConfigUserPass dbConf
                             , "poolSize" ≕ dbConfigPoolSize dbConf
@@ -46,6 +49,7 @@ instance MongoValue DatabaseConfig where
 
   fromValue (Bson.Doc doc) =
     DatabaseConfig <$> doc .:  "host"
+                   <*> doc .:  "port"
                    <*> doc .:  "database"
                    <*> doc .:? "userpass"
                    <*> doc .:  "poolSize"
@@ -53,6 +57,7 @@ instance MongoValue DatabaseConfig where
 
 instance Aeson.ToJSON DatabaseConfig where
   toJSON dbConf = Aeson.object [ "host"     Aeson..= dbConfigHost     dbConf
+                               , "port"     Aeson..= dbConfigPort     dbConf
                                , "database" Aeson..= dbConfigDatabase dbConf
                                , "userpass" Aeson..= dbConfigUserPass dbConf
                                , "poolSize" Aeson..= dbConfigPoolSize dbConf
@@ -61,6 +66,7 @@ instance Aeson.ToJSON DatabaseConfig where
 instance Aeson.FromJSON DatabaseConfig where
   parseJSON (Aeson.Object obj) =
     DatabaseConfig <$> obj Aeson..:  "host"
+                   <*> obj Aeson..:? "port" Aeson..!= 27017
                    <*> obj Aeson..:  "database"
                    <*> obj Aeson..:? "userpass"
                    <*> obj Aeson..:  "poolSize"
